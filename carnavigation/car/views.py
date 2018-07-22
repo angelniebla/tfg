@@ -57,20 +57,19 @@ def processData(car1, car1_old):
 				radius = 1.00 # kilometros
 				distance = haversine(float(car1['latitude']), float(car1['longitude']), float(car2[0].latitude), float(car2[0].longitude))	#Distancia entre los dos coches
 				if distance <= radius and car1_old != None:
-					isBehind = behind(float(car1['latitude']), float(car1['longitude']), float(car2[0].latitude), float(car2[0].longitude), float(car1['latitude_dst']), float(car1['latitude_dst']))	#Comprobacion de si el coche2 esta destras del coche1 segun el destino marcado por el coche1
-					if nearby(float(car1['latitude']), float(car1['longitude']), float(car1_old.latitude), float(car1_old.longitude), float(car2[0].latitude), float(car2[0].longitude)):	#Comprobacion de si el coche2 esta mas cerca del coche1 que antes
+					if nearby(float(car1['latitude']), float(car1['longitude']), float(car1_old.latitude), float(car1_old.longitude), float(car2[0].latitude), float(car2[0].longitude)):
 						print('esta cerca')
+						isBehind = behind(float(car1['latitude']), float(car1['longitude']), float(car2[0].latitude), float(car2[0].longitude), float(car1['latitude_dst']), float(car1['latitude_dst']))
 						carConfiguration = filter(lambda y: y.uid == x.uid, Configuration.objects.all())
-						if(carConfiguration[0].alertAccident):
-							send_alert_accident(float(car1['x']), float(car1['y']), float(car1['z']), float(car2[0].x), float(car2[0].y), float(car2[0].z), x.tokenId, isBehind)
+						send_alert_accident(float(car1['x']), float(car1['y']), float(car1['z']), float(car2[0].x), float(car2[0].y), float(car2[0].z), x.tokenId, isBehind, carConfiguration[0], distance, car1['speed'])
 					else:
 						print('no esta cerca')
 
 
 def haversine(lat1, lon1, lat2, lon2):
     """
-    Calculate the great circle distance between two points 
-    on the earth (specified in decimal degrees)
+    cálculo de la distancia de círculo máximo entre dos puntos de un globo 
+    sabiendo su longitud y su latitud.
     """
     # decimales a radianes 
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
@@ -84,6 +83,10 @@ def haversine(lat1, lon1, lat2, lon2):
     return c * r
 			
 def nearby(lat1, lon1, lat1_old, lon1_old, lat2, lon2):
+	"""
+	Comprobacion de si el coche2 esta mas cerca del coche1 
+	que en un momento anterior
+    """
 	dis = haversine(lat2,lon2,lat1, lon1)
 	dis_old = haversine(lat2,lon2,lat1_old,lon1_old)
 	
@@ -93,6 +96,10 @@ def nearby(lat1, lon1, lat1_old, lon1_old, lat2, lon2):
 		return False	
 
 def behind(lat1, lon1, lat2, lon2, lat1_dst, lon1_dst):
+	"""
+    #Comprobacion de si el coche2 esta destras del coche1 
+    segun el destino marcado por el coche1
+    """
 	if(lat1_dst == 0 or lon1_dst == 0):
 		return None
 	else:
@@ -105,6 +112,10 @@ def behind(lat1, lon1, lat2, lon2, lat1_dst, lon1_dst):
 			return False
 
 def direction(x, y, z):
+	"""
+    Obtencion de la direccion del vehiculo atraves de la orientacion del smartphone
+    sobre los ejes x, y, z
+    """
 	if(y < -0.5):	#VERTICAL
 		if(1 > z >= 0):
 			return 0
@@ -134,7 +145,7 @@ def direction(x, y, z):
 			elif(x >= 2):
 				return 0
 			
-def send_alert_accident(x1, y1, z1, x2, y2, z2, to, behind):
+def send_alert_accident(x1, y1, z1, x2, y2, z2, to, behind, carConfiguration, distance, speed):
 	
 	print x1
 	print y1
@@ -144,22 +155,22 @@ def send_alert_accident(x1, y1, z1, x2, y2, z2, to, behind):
 	print car1_dir
 	print car2_dir
 	
-	if(car1_dir == car2_dir):
+	if(car1_dir == car2_dir and carConfiguration.alertAccident):
 		print behind
 		if(behind != None):
 			if(behind):
-				body = {"to": to, "notification": {"title": "ALERTA POR POSIBLE COLISION TRASERA","body": "Un coche a x metros se aproxima a x k/h por detras"}}
+				body = {"to": to, "notification": {"title": "ALERTA POR POSIBLE COLISION TRASERA","body": "Un coche a " + str(distance)[:3] + " metros se aproxima a " + speed + " k/h por detras"}}
 			else:
 				body = {"to": to, "notification": {"title": "HAY UN COCHE DELANTE","body": ""}}
 		else:
 			body = {"to": to, "notification": {"title": "HAY UN COCHE CERCA","body": ""}}				
 	
 	
-	elif((car1_dir == 0 and car1_dir == 3) or (car1_dir == 3 and car2_dir == 0) or (car1_dir == 1 and car2_dir == 2) or (car1_dir == 2 and car2_dir == 1)):
-		body = {"to": to, "notification": {"title": "ALERTA POR POSIBLE COLISION DELATERA","body": "Un coche a x metros se aproxima a x k/h por delante"}}
+	elif((car1_dir == 0 and car1_dir == 3) or (car1_dir == 3 and car2_dir == 0) or (car1_dir == 1 and car2_dir == 2) or (car1_dir == 2 and car2_dir == 1) and carConfiguration.alertAccident):
+		body = {"to": to, "notification": {"title": "ALERTA POR POSIBLE COLISION DELATERA","body": "Un coche a " + str(distance)[:3] + " metros se aproxima a " + speed + " k/h por delante"}}
 	
-	else:
-		body = {"to": to, "notification": {"title": "ALERTA POR VEHICULO APROXIMANDOSE A INTERSECCION","body": "Un coche a x metros se aproxima a x k/h en la interseccion"}}
+	elif(carConfiguration.alertHelp):
+		body = {"to": to, "notification": {"title": "ALERTA POR VEHICULO APROXIMANDOSE A INTERSECCION","body": "Un coche a " + str(distance)[:3] + " metros se aproxima a " + speed + " k/h en la interseccion"}}
 
 	if(body != None):
 		postNotification(body)
