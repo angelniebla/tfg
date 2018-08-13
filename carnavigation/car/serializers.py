@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Car
-from .models import Credentials
+from .models import Credential
 from .models import Configuration
 from .models import Sensor
 
@@ -10,11 +10,8 @@ class CarSerializer(serializers.Serializer):
 	speed = serializers.CharField()
 	latitude = serializers.CharField()
 	longitude = serializers.CharField()
-	x = serializers.CharField()
-	y = serializers.CharField()
-	z = serializers.CharField()
-	latitude_dst = serializers.CharField()
-	longitude_dst = serializers.CharField()
+	latitude_old = serializers.CharField(default='0')
+	longitude_old = serializers.CharField(default='0')
 	
 	def create(self, validated_data):
 		return Car.objects.create(**validated_data)
@@ -25,24 +22,21 @@ class CarSerializer(serializers.Serializer):
 		instance.speed = validated_data.get('speed', instance.speed)
 		instance.latitude = validated_data.get('latitude', instance.latitude)
 		instance.longitude = validated_data.get('longitude', instance.longitude)
-		instance.x = validated_data.get('x', instance.orientation)
-		instance.y = validated_data.get('y', instance.degrees)
-		instance.z = validated_data.get('y', instance.degrees)
-		instance.latitude_dst = validated_data.get('latitude_dst', instance.latitude_dst)
-		instance.longitude_dst = validated_data.get('longitude_dst', instance.longitude_dst)
+		instance.latitude_old = validated_data.get('latitude_old', instance.latitude_old)
+		instance.longitude_old = validated_data.get('longitude_old', instance.longitude_old)
 		instance.save()
 		return instance
 		
 	class Meta:
 		model = Car
-		fields = ('id', 'uid', 'tokenId', 'speed', 'latitude', 'longitude', 'x', 'y', 'z', 'latitude_dst', 'longitude_dst')
+		fields = ('id', 'uid', 'tokenId', 'speed', 'latitude', 'longitude','latitude_old', 'longitude_old')
 
-class CredentialsSerializer(serializers.Serializer):
+class CredentialSerializer(serializers.Serializer):
 	uid = serializers.CharField()
 	tokenId = serializers.CharField()
 	
 	def create(self, validated_data):
-		return Credentials.objects.create(**validated_data)
+		return Credential.objects.create(**validated_data)
 		
 	def update(self, instance, validated_data):
 		instance.uid = validated_data.get('uid', instance.uid)
@@ -51,7 +45,7 @@ class CredentialsSerializer(serializers.Serializer):
 		return instance
 		
 	class Meta:
-		model = Credentials
+		model = Credential
 		fields = ('uid', 'tokenId')
 		
 		
@@ -80,10 +74,11 @@ class ConfigurationSerializer(serializers.Serializer):
 		return instance
 		
 	class Meta:
-		model = Credentials
+		model = Configuration
 		fields = ('uid', 'alertAccident', 'alertStatus', 'alertSpeed', 'alertHelp', 'alertEvent', 'alertCurve')
 		
 class SensorSerializer(serializers.Serializer):
+	nid = serializers.CharField()
 	latitude = serializers.CharField()
 	longitude = serializers.CharField()
 	frozen_road = serializers.BooleanField()
@@ -94,7 +89,7 @@ class SensorSerializer(serializers.Serializer):
 		return Sensor.objects.create(**validated_data)
 		
 	def update(self, instance, validated_data):
-		print validated_data
+		instance.nid = validated_data.get('nid', instance.nid)
 		instance.latitude = validated_data.get('latitude', instance.latitude)
 		instance.longitude = validated_data.get('longitude', instance.longitude)
 		instance.frozen_road = validated_data.get('frozen_road', instance.frozen_road)
@@ -104,5 +99,5 @@ class SensorSerializer(serializers.Serializer):
 		
 	class Meta:
 		model = Sensor
-		fields = ('latitude', 'longitude', 'frozen_road', 'dangerous_curve')
+		fields = ('nid', 'latitude', 'longitude', 'frozen_road', 'dangerous_curve')
 
