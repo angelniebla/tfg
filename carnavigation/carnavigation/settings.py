@@ -58,7 +58,7 @@ ROOT_URLCONF = 'carnavigation.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['/home/angel/carnavigation/car/templates'],
+        'DIRS': ['/home/ubuntu/tfg/carnavigation/car/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
