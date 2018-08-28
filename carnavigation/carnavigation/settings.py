@@ -82,7 +82,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'cardb',
         'USER': 'admin',
-        'PASSWORD': 'admin1',
+        'PASSWORD': 'P45$w0rD',
         'HOST': 'localhost',
         'PORT': '',
     }
