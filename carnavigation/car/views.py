@@ -63,7 +63,13 @@ def authorize(uid):
 	
 
 def notSend(uid, to):
-	alerts = Alert.objects.all()[Alert.objects.all().count()-10:]
+	count = Alert.objects.all().count()
+	if count > 10:
+		 alerts = Alert.objects.all()[count-10:]
+	elif count >= 0:
+		alerts = Alert.objects.all()[:]
+	else:
+		return False
 	for alert in alerts:
 		if(uid == alert.sender and to == alert.receiver and alert.date.strftime("%Y-%m-%d %H:%M") == timezone.now().strftime("%Y-%m-%d %H:%M")):
 			return True
