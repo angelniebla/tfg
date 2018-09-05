@@ -13,7 +13,7 @@ from django.forms import Widget
 
 @admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
-	list_display = ('id', 'uid', 'speed', 'latitude', 'longitude', 'latitude_old', 'longitude_old','date')
+	list_display = ('id', 'uid', 'speed', 'latitude', 'longitude', 'latitude_old', 'longitude_old', 'date')
 	search_fields = ('id',)
 
 

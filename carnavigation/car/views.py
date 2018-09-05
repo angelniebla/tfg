@@ -31,7 +31,6 @@ class JSONResponse(HttpResponse):
 @csrf_exempt
 def car_list(request):	
 	if request.method == 'POST':
-		start = time.time()
 		data = JSONParser().parse(request)
 		data_old = None
 		print data['uid']
@@ -49,9 +48,7 @@ def car_list(request):
 		if serializer.is_valid():
 			if authorize(data['uid']):
 				serializer.save()
-				processData(data, start)
-				finish = time.time() - start
-				#print 'finish: ' + str(finish)
+				processData(data)
 				return JSONResponse(serializer.data, status=201)
 			return JSONResponse({'status': False, 'message': "Usuario no registrado"}, status=401)
 		return JSONResponse(serializer.errors, status=400)
@@ -77,7 +74,7 @@ def notSend(uid, to):
 	return False
 
 		
-def processData(car1, start):
+def processData(car1):
 	if(len(Car.objects.all()) > 1):
 		for x in Credential.objects.all():
 			if car1['uid'] != x.uid:
@@ -98,7 +95,7 @@ def processData(car1, start):
 								direction = get_direction(float(car1['latitude']), float(car1['longitude']), float(car2[0].latitude), float(car2[0].longitude), float(car1['latitude_old']), float(car1['longitude_old']), float(car2[0].latitude_old), float(car2[0].longitude_old))
 								print direction
 								isBehind = behind(float(car1['latitude']), float(car1['longitude']), float(car2[0].latitude), float(car2[0].longitude), float(car1['latitude_old']), float(car1['longitude_old']), direction)
-								send_alert(x.tokenId, isBehind, carConfiguration[0], distance, car1['speed'],direction, car1['uid'], start)
+								send_alert(x.tokenId, isBehind, carConfiguration[0], distance, car1['speed'],direction, car1['uid'])
 							else:
 								print 'far'
 						else:
@@ -217,29 +214,29 @@ def get_direction(lat1, lon1, lat2, lon2, lat1_old, lon1_old, lat2_old, lon2_old
 		elif(d_lat2 < 0 and d_lon2 > 0): 
 			return 0
 		
-def send_alert(to, behind, carConfiguration, distance, speed, direction, uid, start):
+def send_alert(to, behind, carConfiguration, distance, speed, direction, uid):
 	if(direction == 0 and carConfiguration.alertAccident):
 		if(behind != None):
 			if(behind):
 				body = {"to": to, "data": {"title": "ALERTA POR POSIBLE COLISION TRASERA","body": "Un coche a " + str(distance*1000)[:3] + " metros se aproxima a " + speed + " k/h por detras"}}
-				postNotification(body, uid, start)
+				postNotification(body, uid)
 	
 	elif(direction == 1 and carConfiguration.alertAccident):
 		body = {"to": to, "data": {"title": "ALERTA POR POSIBLE COLISION DELATERA","body": "Un coche a " + str(distance*1000)[:3] + " metros se aproxima a " + speed + " k/h por delante"}}
-		postNotification(body, uid, start)
+		postNotification(body, uid)
 	
 	elif(direction == 2 and carConfiguration.alertHelp):
 		body = {"to": to, "data": {"title": "ALERTA POR VEHICULO APROXIMANDOSE A INTERSECCION","body": "Un coche a " + str(distance*1000)[:3] + " metros se aproxima a " + speed + " k/h en la interseccion"}}
-		postNotification(body, uid, start)
+		postNotification(body, uid)
 
-def postNotification(body, uid, start):
+def postNotification(body, uid):
 	print body
 	
 	headers = {"content-type": "application/json", "Authorization": "key=AAAApRo1WOU:APA91bFro_aJI-puTK_zRwdMtPnNxgfQPbrC0QE6qaMjpHHAvYXnhhAUI3Pposz8fQJfE3GgxXv1J0i1SsmnHFSETOZQ-0V6QjuUZaQRij9UwE1St7C1I7xMcLtNApGe0_NPc0EkNBgG"}
 	url = "https://fcm.googleapis.com/fcm/send"
 	requests.post(url, data = json.dumps(body), headers=headers)
 	credential = filter(lambda y: y.tokenId == body['to'], Credential.objects.all())
-	Alert.objects.create(sender = uid, receiver = credential[0].uid,title = body['data']['title'], description = body['data']['body'], time = str(time.time() - start)).save()
+	Alert.objects.create(sender = uid, receiver = credential[0].uid,title = body['data']['title'], description = body['data']['body']).save()
 	
 	
 @csrf_exempt
